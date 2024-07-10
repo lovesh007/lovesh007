@@ -1,1 +1,31 @@
+import openpyxl
+import pandas as pd
+
+class TestCaseReader:
+    def __init__(self, excel_file):
+        self.df = pd.read_excel(excel_file)
+
+    def read_test_cases(self, test_case_ids_lists):
+        updated_test_case_ids_lists = []
+        test_case_ids_lists = [[x.strip() for x in inner_list[0].split(",")] for inner_list in test_case_ids_lists]
+
+        for test_case_list in test_case_ids_lists:
+            updated_test_case_list = []
+            for test_case_id in test_case_list:
+                # Find the row in the DataFrame corresponding to the test case ID
+                row = self.df[self.df['Id'] == test_case_id]
+                if not row.empty:
+                    step = row['Test Step Description'].values[0]
+                    expected_result = row['Test Step Expected Result'].values[0]
+                    updated_test_case_list.append(["Test Case ID:", test_case_id, "Test Step Description:", step,
+                                                   "Test Step Expected Result:", expected_result])
+                else:
+                    print(f"Test case ID {test_case_id} not found in the Excel file.")
+            updated_test_case_ids_lists.append(updated_test_case_list)
+
+        # Display the updated list of test cases
+        for updated_list in updated_test_case_ids_lists:
+            print(updated_list)
+
+        return updated_test_case_ids_lists
 
