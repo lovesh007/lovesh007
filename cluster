@@ -1,0 +1,82 @@
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+class TestCaseSimilarity:
+    def __init__(self, file_path):
+        self.df = pd.read_excel(file_path)
+
+    def calculate_similarity(self):
+        # Load model and calculate embeddings
+        model = SentenceTransformer('C:\\Users\\lullalo\\.cache\\huggingface\\hub\\all-MiniLM-L6-v2-main')
+        # Convert the 'Test Step Description' column to strings
+        self.df['Test Step Description'] = self.df['Test Step Description'].astype(str)
+        # Calculate embeddings
+        embeddings = model.encode(self.df['Test Step Description'])
+
+        # Calculate the cosine similarity between each pair of test cases
+        self.cosine_similarity_matrix = cosine_similarity(embeddings)
+        # Create a DataFrame for the cosine similarity matrix
+        self.cosine_similarity_df = pd.DataFrame(
+            self.cosine_similarity_matrix,
+            index=self.df['Id'],
+            columns=self.df['Id']
+        )
+
+    def find_similar_test_cases(self, threshold=0.9):
+        similar_cases = {}
+        for i, test_case_id in enumerate(self.cosine_similarity_df.index):
+            similar = self.cosine_similarity_df[test_case_id][
+                self.cosine_similarity_df[test_case_id] >= threshold].index.tolist()
+            similar = [tc for tc in similar if tc != test_case_id]
+            if similar:
+                similar_cases[test_case_id] = similar
+
+        optimized_cases = []
+        similar_groups = []
+        processed = set()
+
+        for key, similar in similar_cases.items():
+            if key not in processed:
+                group = [key] + similar
+                similar_groups.append(group)
+                processed.update(group)
+                max_steps_case = max(group, key=lambda x: len(
+                    self.df[self.df['Id'] == x]['Test Step Description'].values[0].split()))
+                optimized_cases.append(max_steps_case)
+
+        unique_cases = set(self.df['Id']) - processed
+        optimized_cases.extend(unique_cases)
+
+        self.total_cases = len(self.df['Id'])
+        self.optimized_cases = optimized_cases
+        self.similar_groups = similar_groups
+
+    def generate_report(self, output_file):
+        # Create DataFrame for similar groups
+        similar_groups_data = []
+        for group in self.similar_groups:
+            similar_groups_data.append({"Similar Test Cases": ", ".join(group)})
+
+        similar_groups_df = pd.DataFrame(similar_groups_data)
+
+        # Create DataFrame for optimized cases
+        optimized_cases_data = [{"Optimized Test Case ID": case} for case in self.optimized_cases]
+        optimized_cases_df = pd.DataFrame(optimized_cases_data)
+
+        # Create summary data
+        summary_data = {
+            "Total Test Cases": [self.total_cases],
+            "Optimized Test Cases": [len(self.optimized_cases)],
+            "Bucket of Similar Test Cases": [len(self.similar_groups)]
+        }
+        summary_df = pd.DataFrame(summary_data)
+
+        # Write to Excel
+        with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            similar_groups_df.to_excel(writer, sheet_name='Similar Test Cases', index=False)
+            optimized_cases_df.to_excel(writer, sheet_name='Optimized Test Cases', index=False)
+
+        print(f"Report generated: {output_file}")
