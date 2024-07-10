@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\lullalo\Downloads\RTO\RTO\main.py", line 30, in <module>
+    result = prediction(test_case_list)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lullalo\Downloads\RTO\RTO\prompt.py", line 39, in prediction
+    result = data['prediction']
+             ~~~~^^^^^^^^^^^^^^
+KeyError: 'prediction'
