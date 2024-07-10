@@ -1,0 +1,65 @@
+from RTO.cluster import TestCaseSimilarity
+from RTO.grouping import TestCaseReader
+from RTO.prompt import prediction
+from RTO.similar import ExcelReader
+
+file_path = "TC1000.xlsx"
+output_file = "Test_Optimization_Report.xlsx"
+final_output_file = "Final_Test_Optimization_Report.xlsx"
+
+similarity_finder = TestCaseSimilarity(file_path)
+similarity_finder.calculate_similarity()
+similarity_finder.find_similar_test_cases()
+similarity_finder.generate_report(output_file)
+
+sheet_name = "Similar Test Cases"  # Replace with the name of the sheet you want to read
+
+reader = ExcelReader(output_file)
+first_column_values = reader.read_first_column(sheet_name)
+if first_column_values is not None:
+    print(first_column_values)  # Print the values of the first column
+else:
+    print("Failed to read the first column of the Excel sheet.")
+
+# Create an instance of TestCaseReader
+test_case_reader = TestCaseReader(file_path)
+
+# Read test case details from Excel
+output = test_case_reader.read_test_cases(first_column_values)
+results = []
+for test_case_list in output:
+    result = prediction(test_case_list)
+    print(result)
+    print("************************************************************************************")
+    results.append(result)
+
+# Save the final output to an Excel file
+def save_final_output_to_excel(results, final_output_file):
+    # Extract key differences, similarity scores, and merged test cases from results
+    key_differences = []
+    similarity_scores = []
+    merged_test_cases = []
+    
+    for result in results:
+        key_diff = result.get("Key differences present in the test steps:", "")
+        sim_scores = result.get("Similarity score of the test cases:", "")
+        merged_cases = result.get("Merged test cases:", "")
+        
+        key_differences.append({"Key Differences": key_diff})
+        similarity_scores.append({"Similarity Scores": sim_scores})
+        merged_test_cases.append({"Merged Test Cases": merged_cases})
+    
+    # Create DataFrames for each result section
+    key_differences_df = pd.DataFrame(key_differences)
+    similarity_scores_df = pd.DataFrame(similarity_scores)
+    merged_test_cases_df = pd.DataFrame(merged_test_cases)
+    
+    # Write to Excel
+    with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
+        key_differences_df.to_excel(writer, sheet_name='Key Differences', index=False)
+        similarity_scores_df.to_excel(writer, sheet_name='Similarity Scores', index=False)
+        merged_test_cases_df.to_excel(writer, sheet_name='Merged Test Cases', index=False)
+
+    print(f"Final report generated: {final_output_file}")
+
+save_final_output_to_excel(results, final_output_file)
