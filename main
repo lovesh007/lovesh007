@@ -1,0 +1,33 @@
+from RTO.cluster import TestCaseSimilarity
+from RTO.grouping import TestCaseReader
+from RTO.prompt import prediction
+from RTO.similar import ExcelReader
+
+file_path = "TC1000.xlsx"
+output_file = "Test_Optimization_Report.xlsx"
+
+similarity_finder = TestCaseSimilarity(file_path)
+similarity_finder.calculate_similarity()
+similarity_finder.find_similar_test_cases()
+similarity_finder.generate_report(output_file)
+
+sheet_name = "Similar Test Cases"  # Replace with the name of the sheet you want to read
+
+reader = ExcelReader(output_file)
+first_column_values = reader.read_first_column(sheet_name)
+if first_column_values is not None:
+    print(first_column_values)  # Print the values of the first column
+else:
+    print("Failed to read the first column of the Excel sheet.")
+
+# Create an instance of TestCaseReader
+test_case_reader = TestCaseReader(file_path)
+
+# Read test case details from Excel
+output = test_case_reader.read_test_cases(first_column_values)
+results = []
+for test_case_list in output:
+    result = prediction(test_case_list)
+    print(result)
+    print("************************************************************************************")
+    results.append(result)
