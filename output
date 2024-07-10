@@ -1,0 +1,37 @@
+**1. Key differences present in the test steps:**
+
+* **TC-270908:**
+    * Step 11: Check whether Soft credit Check verbiage is displayed
+* **TC-270921:**
+    * Step 13: In express checkout page select edit shipping address and contact information and click on save.
+    * Step 14: Enter credit card payment details and click on continue and check whether Soft credit Check verbiage is displayed
+* **TC-270934:**
+    * Step 9: Select Call filter option in protection plan for device
+* **TC-270933:**
+    * Step 8: Apply digital secure in protection plan for device
+* **TC-270961:**
+    * Step 8: In express checkout page select keep shopping option and select second devices.
+
+**2. Similarity score of the test cases:**
+
+* TC-270908 and TC-270961: 9/10
+* TC-270908 and TC-270933: 8/10
+* TC-270908 and TC-270934: 7/10
+* TC-270921 and TC-270961: 8/10
+* TC-270921 and TC-270933: 7/10
+* TC-270921 and TC-270934: 6/10
+
+**3. Merged test cases:**
+
+* **TC-270908-Merged:**
+    * Steps 1-10 from TC-270908
+    * Steps 11-12 from TC-270961
+* **TC-270921-Merged:**
+    * Steps 1-12 from TC-270921
+    * Step 13 from TC-270961
+* **TC-270933-Merged:**
+    * Steps 1-7 from TC-270933
+    * Steps 8-10 from TC-270961
+* **TC-270934-Merged:**
+    * Steps 1-8 from TC-270934
+    * Steps 9-10 from TC-270961
