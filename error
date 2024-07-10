@@ -15,3 +15,103 @@ Traceback (most recent call last):
     key_diff = result.get("Key differences present in the test steps:", "")
                ^^^^^^^^^^
 AttributeError: 'str' object has no attribute 'get'
+
+import requests
+
+def prediction(test_cases):
+    """
+    This function is used to perform either question and answer or classification of text
+    based on the user selection in swagger
+    input:
+    prompt parameter is a prompt that is passed for question and answer or classification purpose
+    return: this function returns the classification or question and answer purpose
+    """
+
+    prompt = f"""
+                
+                     I am providing you with the few similar test cases with Id, Test Step Description and Test Step Expected Result.
+                      {test_cases}
+                      
+                      Your task is to:
+                      1. Give me the key differences present in the test steps.
+                      2. Give me the similarity score of the test cases, between 0 to 10 where 0 means no similarity and 10 means most similar.
+                      3. take test cases which has mostly similar test cases steps and merge it into a single test case only where it is required. 
+                      
+                    """
+    url = "http://nxt"
+    payload = {
+        "temperature": 0,
+        "maxOutputTokens": 8000,
+        "topP": 1,
+        "input": prompt
+    }
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        data = response.json()
+        if 'result' in data:
+            result = data['result']['prediction']
+        else:
+            result = data['prediction']
+
+        # Convert result to a dictionary
+        result_dict = {
+            "Key differences present in the test steps:": [],
+            "Similarity score of the test cases:": [],
+            "Merged test cases:": []
+        }
+
+        # Parse the result string into sections
+        sections = result.split("\n\n")
+        current_section = None
+        for section in sections:
+            if "Key differences present in the test steps:" in section:
+                current_section = "Key differences present in the test steps:"
+            elif "Similarity score of the test cases:" in section:
+                current_section = "Similarity score of the test cases:"
+            elif "Merged test cases:" in section:
+                current_section = "Merged test cases:"
+            
+            if current_section:
+                result_dict[current_section].append(section.strip())
+
+        return result_dict
+    else:
+        return None
+
+
+
+
+
+
+
+def save_final_output_to_excel(results, final_output_file):
+    # Extract key differences, similarity scores, and merged test cases from results
+    key_differences = []
+    similarity_scores = []
+    merged_test_cases = []
+    
+    for result in results:
+        if result:
+            key_diff = "\n".join(result.get("Key differences present in the test steps:", ""))
+            sim_scores = "\n".join(result.get("Similarity score of the test cases:", ""))
+            merged_cases = "\n".join(result.get("Merged test cases:", ""))
+            
+            key_differences.append({"Key Differences": key_diff})
+            similarity_scores.append({"Similarity Scores": sim_scores})
+            merged_test_cases.append({"Merged Test Cases": merged_cases})
+    
+    # Create DataFrames for each result section
+    key_differences_df = pd.DataFrame(key_differences)
+    similarity_scores_df = pd.DataFrame(similarity_scores)
+    merged_test_cases_df = pd.DataFrame(merged_test_cases)
+    
+    # Write to Excel
+    with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
+        key_differences_df.to_excel(writer, sheet_name='Key Differences', index=False)
+        similarity_scores_df.to_excel(writer, sheet_name='Similarity Scores', index=False)
+        merged_test_cases_df.to_excel(writer, sheet_name='Merged Test Cases', index=False)
+
+    print(f"Final report generated: {final_output_file}")
+
+save_final_output_to_excel(results, final_output_file)
+
