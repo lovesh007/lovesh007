@@ -1,0 +1,53 @@
+import requests
+
+
+
+def prediction(test_cases):
+    """
+    This function is used to perform either question and answer or classification of text
+    based on the user selection in swagger
+    input:
+    prompt parameter is a prompt that is passed for question and answer or classification purpose
+    return: this function returns the classification or question and answer purpose
+    """
+
+    prompt = f"""
+                
+                     I am providing you with the few similar test cases with Id, Test Step Description and Test Step Expected Result.
+                      {test_cases}
+                      
+                      Your task is to:
+                      1. Give me the key differences present in the test steps.
+                      2. Give me the similarity score of the test cases, between 0 to 10 where 0 means no similarity and 10 means most similar.
+                      3. take test cases which has mostly similar test cases steps and merge it into a single test case only where it is required. 
+                      
+                    """
+    url = "http://nxtgenaiml.ebiz.verizon.com:8881/gemini_prediction/"
+    payload = {
+        "temperature": 0,
+        "maxOutputTokens": 8000,
+        "topP": 1,
+        "input": prompt
+    }
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        data = response.json()
+        # print("*************", data)
+        if 'result' in data:
+            result = data['result']['prediction']
+        else:
+            result = data['prediction']
+        return result
+    else:
+        return None
+
+
+
+
+
+
+
+
+
+
+
