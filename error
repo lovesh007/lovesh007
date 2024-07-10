@@ -115,3 +115,15 @@ def save_final_output_to_excel(results, final_output_file):
 
 save_final_output_to_excel(results, final_output_file)
 
+
+
+
+
+Traceback (most recent call last):
+  File "C:\Users\lullalo\Downloads\RTO\RTO\main.py", line 33, in <module>
+    result = prediction(test_case_list)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lullalo\Downloads\RTO\RTO\prompt.py", line 37, in prediction
+    result = data['prediction']
+             ~~~~^^^^^^^^^^^^^^
+KeyError: 'prediction'
