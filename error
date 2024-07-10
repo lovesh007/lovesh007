@@ -6,3 +6,12 @@ Traceback (most recent call last):
     result = data['prediction']
              ~~~~^^^^^^^^^^^^^^
 KeyError: 'prediction'
+
+
+Traceback (most recent call last):
+  File "C:\Users\lullalo\Downloads\RTO\RTO\main.py", line 69, in <module>
+    save_final_output_to_excel(results, final_output_file)
+  File "C:\Users\lullalo\Downloads\RTO\RTO\main.py", line 47, in save_final_output_to_excel
+    key_diff = result.get("Key differences present in the test steps:", "")
+               ^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'get'
