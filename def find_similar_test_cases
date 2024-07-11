@@ -90,4 +90,120 @@ class TestCaseSimilarity:
 
         self.unique_cases = unique_cases
 
-        self.similar_groups = similar_groups
+    def generate_report(self, output_file):
+        # Create DataFrame for similar groups
+        similar_groups_data = []
+        for group in self.similar_groups:
+            similar_groups_data.append({"Similar Test Cases": ", ".join(group)})
+
+        similar_groups_df = pd.DataFrame(similar_groups_data)
+
+        # Create DataFrame for optimized cases
+        optimized_cases_data = [{"Optimized Test Case ID": case} for case in self.optimized_cases]
+        optimized_cases_df = pd.DataFrame(optimized_cases_data)
+
+        # Create DataFrame for unique cases
+        unique_cases_data = [{"Unique Test Case ID": case} for case in self.unique_cases]
+        unique_cases_df = pd.DataFrame(unique_cases_data)
+
+        # Create summary data
+        summary_data = {
+            "Total Test Cases": [self.total_cases],
+            "Optimized Test Cases": [len(self.optimized_cases)],
+            "Bucket of Similar Test Cases": [len(self.similar_groups)],
+            "Unique Test Cases": [len(self.unique_cases)]
+        }
+        summary_df = pd.DataFrame(summary_data)
+
+        # Write to Excel
+        with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            similar_groups_df.to_excel(writer, sheet_name='Similar Test Cases', index=False)
+            optimized_cases_df.to_excel(writer, sheet_name='Optimized Test Cases', index=False)
+            unique_cases_df.to_excel(writer, sheet_name='Unique Test Cases', index=False)
+
+        print(f"Report generated: {output_file}")
+
+FINAL OUTPUT EXCEL
+def save_final_output_to_excel(results, unique_test_cases, final_output_file):
+    # Extract key differences, similarity scores, merged test cases, and unique test cases from results
+    combined_data = []
+
+    for result in results:
+        if result:
+            key_diff = "\n".join(result.get("Key differences present in the test steps:", ""))
+            sim_scores = "\n".join(result.get("Similarity score of the test cases:", ""))
+            merged_cases = "\n".join(result.get("Merged test cases:", ""))
+            
+            combined_data.append({
+                "Key Differences": key_diff,
+                "Similarity Scores": sim_scores,
+                "Merged Test Cases": merged_cases,
+                "Unique Test Cases": ""  # Placeholder for unique test cases
+            })
+
+    # Add unique test cases to the combined data
+    for i, unique_case in enumerate(unique_test_cases):
+        if i < len(combined_data):
+            combined_data[i]["Unique Test Cases"] = unique_case
+        else:
+            combined_data.append({
+                "Key Differences": "",
+                "Similarity Scores": "",
+                "Merged Test Cases": "",
+                "Unique Test Cases": unique_case
+            })
+
+    # Create a DataFrame for the combined results
+    combined_df = pd.DataFrame(combined_data)
+    
+    # Write to Excel
+    with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
+        combined_df.to_excel(writer, sheet_name='Test Case Results', index=False)
+
+    print(f"Final report generated: {final_output_file}")
+
+MAIN
+
+file_path = "TC1000.xlsx"
+output_file = "Test_Optimization_Report.xlsx"
+final_output_file = "Final_Test_Optimization_Report.xlsx"
+
+similarity_finder = TestCaseSimilarity(file_path)
+similarity_finder.calculate_similarity()
+similarity_finder.find_similar_test_cases()
+similarity_finder.find_unique_test_cases()
+
+# Access unique test cases
+unique_test_cases = similarity_finder.unique_cases
+print(f"Unique Test Cases: {unique_test_cases}")
+
+# Generate report
+similarity_finder.generate_report(output_file)
+
+sheet_name = "Similar Test Cases"  # Replace with the name of the sheet you want to read
+
+reader = ExcelReader(output_file)
+first_column_values = reader.read_first_column(sheet_name)
+if first_column_values is not None:
+    print(first_column_values)  # Print the values of the first column
+else:
+    print("Failed to read the first column of the Excel sheet.")
+
+# Create an instance of TestCaseReader
+test_case_reader = TestCaseReader(file_path)
+
+# Read test case details from Excel
+output = test_case_reader.read_test_cases(first_column_values)
+results = []
+for test_case_list in output:
+    result = prediction(test_case_list)
+    print(result)
+    print("************************************************************************************")
+    results.append(result)
+
+# Save final output including unique test cases
+save_final_output_to_excel(results, unique_test_cases, final_output_file)
+
+
+
