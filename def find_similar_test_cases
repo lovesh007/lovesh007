@@ -1,0 +1,28 @@
+    def find_similar_test_cases(self, threshold=0.9):
+        similar_cases = {}
+        for i, test_case_id in enumerate(self.cosine_similarity_df.index):
+            similar = self.cosine_similarity_df[test_case_id][
+                self.cosine_similarity_df[test_case_id] >= threshold].index.tolist()
+            similar = [tc for tc in similar if tc != test_case_id]
+            if similar:
+                similar_cases[test_case_id] = similar
+
+        optimized_cases = []
+        similar_groups = []
+        processed = set()
+
+        for key, similar in similar_cases.items():
+            if key not in processed:
+                group = [key] + similar
+                similar_groups.append(group)
+                processed.update(group)
+                max_steps_case = max(group, key=lambda x: len(
+                    self.df[self.df['Id'] == x]['Test Step Description'].values[0].split()))
+                optimized_cases.append(max_steps_case)
+
+        unique_cases = set(self.df['Id']) - processed
+        optimized_cases.extend(unique_cases)
+
+        self.total_cases = len(self.df['Id'])
+        self.optimized_cases = optimized_cases
+        self.similar_groups = similar_groups
