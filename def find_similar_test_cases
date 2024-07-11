@@ -25,59 +25,6 @@
 
         self.total_cases = len(self.df['Id'])
         self.optimized_cases = optimized_cases
-
-
-
-
-GPT generated unique test cases function
-class TestCaseSimilarity:
-    def __init__(self, file_path):
-        self.df = pd.read_excel(file_path)
-
-    def calculate_similarity(self):
-        # Load model and calculate embeddings
-        model = SentenceTransformer('C:\\Users\\lullalo\\.cache\\huggingface\\hub\\all-MiniLM-L6-v2-main')
-        # Convert the 'Test Step Description' column to strings
-        self.df['Test Step Description'] = self.df['Test Step Description'].astype(str)
-        # Calculate embeddings
-        embeddings = model.encode(self.df['Test Step Description'])
-
-        # Calculate the cosine similarity between each pair of test cases
-        self.cosine_similarity_matrix = cosine_similarity(embeddings)
-        # Create a DataFrame for the cosine similarity matrix
-        self.cosine_similarity_df = pd.DataFrame(
-            self.cosine_similarity_matrix,
-            index=self.df['Id'],
-            columns=self.df['Id']
-        )
-
-    def find_similar_test_cases(self, threshold=0.9):
-        similar_cases = {}
-        for i, test_case_id in enumerate(self.cosine_similarity_df.index):
-            similar = self.cosine_similarity_df[test_case_id][
-                self.cosine_similarity_df[test_case_id] >= threshold].index.tolist()
-            similar = [tc for tc in similar if tc != test_case_id]
-            if similar:
-                similar_cases[test_case_id] = similar
-
-        optimized_cases = []
-        similar_groups = []
-        processed = set()
-
-        for key, similar in similar_cases.items():
-            if key not in processed:
-                group = [key] + similar
-                similar_groups.append(group)
-                processed.update(group)
-                max_steps_case = max(group, key=lambda x: len(
-                    self.df[self.df['Id'] == x]['Test Step Description'].values[0].split()))
-                optimized_cases.append(max_steps_case)
-
-        unique_cases = set(self.df['Id']) - processed
-        optimized_cases.extend(unique_cases)
-
-        self.total_cases = len(self.df['Id'])
-        self.optimized_cases = optimized_cases
         self.similar_groups = similar_groups
 
     def find_unique_test_cases(self, threshold=0.1):
@@ -124,86 +71,41 @@ class TestCaseSimilarity:
 
         print(f"Report generated: {output_file}")
 
-FINAL OUTPUT EXCEL
+    # Save the final output to an Excel file
 def save_final_output_to_excel(results, unique_test_cases, final_output_file):
-    # Extract key differences, similarity scores, merged test cases, and unique test cases from results
-    combined_data = []
+        # Extract key differences, similarity scores, merged test cases, and unique test cases from results
+        combined_data = []
 
-    for result in results:
-        if result:
-            key_diff = "\n".join(result.get("Key differences present in the test steps:", ""))
-            sim_scores = "\n".join(result.get("Similarity score of the test cases:", ""))
-            merged_cases = "\n".join(result.get("Merged test cases:", ""))
-            
-            combined_data.append({
-                "Key Differences": key_diff,
-                "Similarity Scores": sim_scores,
-                "Merged Test Cases": merged_cases,
-                "Unique Test Cases": ""  # Placeholder for unique test cases
-            })
+        for result in results:
+            if result:
+                key_diff = "\n".join(result.get("Key differences present in the test steps:", ""))
+                sim_scores = "\n".join(result.get("Similarity score of the test cases:", ""))
+                merged_cases = "\n".join(result.get("Merged test cases:", ""))
 
-    # Add unique test cases to the combined data
-    for i, unique_case in enumerate(unique_test_cases):
-        if i < len(combined_data):
-            combined_data[i]["Unique Test Cases"] = unique_case
-        else:
-            combined_data.append({
-                "Key Differences": "",
-                "Similarity Scores": "",
-                "Merged Test Cases": "",
-                "Unique Test Cases": unique_case
-            })
+                combined_data.append({
+                    "Key Differences": key_diff,
+                    "Similarity Scores": sim_scores,
+                    "Merged Test Cases": merged_cases,
+                    "Unique Test Cases": ""  # Placeholder for unique test cases
+                })
 
-    # Create a DataFrame for the combined results
-    combined_df = pd.DataFrame(combined_data)
-    
-    # Write to Excel
-    with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
-        combined_df.to_excel(writer, sheet_name='Test Case Results', index=False)
+        # Add unique test cases to the combined data
+        for i, unique_case in enumerate(unique_test_cases):
+            if i < len(combined_data):
+                combined_data[i]["Unique Test Cases"] = unique_case
+            else:
+                combined_data.append({
+                    "Key Differences": "",
+                    "Similarity Scores": "",
+                    "Merged Test Cases": "",
+                    "Unique Test Cases": unique_case
+                })
 
-    print(f"Final report generated: {final_output_file}")
+        # Create a DataFrame for the combined results
+        combined_df = pd.DataFrame(combined_data)
 
-MAIN
+        # Write to Excel
+        with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
+            combined_df.to_excel(writer, sheet_name='Test Case Results', index=False)
 
-file_path = "TC1000.xlsx"
-output_file = "Test_Optimization_Report.xlsx"
-final_output_file = "Final_Test_Optimization_Report.xlsx"
-
-similarity_finder = TestCaseSimilarity(file_path)
-similarity_finder.calculate_similarity()
-similarity_finder.find_similar_test_cases()
-similarity_finder.find_unique_test_cases()
-
-# Access unique test cases
-unique_test_cases = similarity_finder.unique_cases
-print(f"Unique Test Cases: {unique_test_cases}")
-
-# Generate report
-similarity_finder.generate_report(output_file)
-
-sheet_name = "Similar Test Cases"  # Replace with the name of the sheet you want to read
-
-reader = ExcelReader(output_file)
-first_column_values = reader.read_first_column(sheet_name)
-if first_column_values is not None:
-    print(first_column_values)  # Print the values of the first column
-else:
-    print("Failed to read the first column of the Excel sheet.")
-
-# Create an instance of TestCaseReader
-test_case_reader = TestCaseReader(file_path)
-
-# Read test case details from Excel
-output = test_case_reader.read_test_cases(first_column_values)
-results = []
-for test_case_list in output:
-    result = prediction(test_case_list)
-    print(result)
-    print("************************************************************************************")
-    results.append(result)
-
-# Save final output including unique test cases
-save_final_output_to_excel(results, unique_test_cases, final_output_file)
-
-
-
+        print(f"Final report generated: {final_output_file}")
