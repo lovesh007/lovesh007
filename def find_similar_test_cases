@@ -1,111 +1,33 @@
-    def find_similar_test_cases(self, threshold=0.9):
-        similar_cases = {}
-        for i, test_case_id in enumerate(self.cosine_similarity_df.index):
-            similar = self.cosine_similarity_df[test_case_id][
-                self.cosine_similarity_df[test_case_id] >= threshold].index.tolist()
-            similar = [tc for tc in similar if tc != test_case_id]
-            if similar:
-                similar_cases[test_case_id] = similar
+def find_similar_test_cases(self, threshold=0.9):
+    similar_cases = {}
+    for i, test_case_id in enumerate(self.cosine_similarity_df.index):
+        similar = self.cosine_similarity_df[test_case_id][
+            self.cosine_similarity_df[test_case_id] >= threshold].index.tolist()
+        similar = [tc for tc in similar if tc != test_case_id]
+        if similar:
+            similar_cases[test_case_id] = similar
 
-        optimized_cases = []
-        similar_groups = []
-        processed = set()
+    optimized_cases = []
+    similar_groups = []
+    processed = set()
 
-        for key, similar in similar_cases.items():
-            if key not in processed:
-                group = [key] + similar
-                similar_groups.append(group)
-                processed.update(group)
-                max_steps_case = max(group, key=lambda x: len(
-                    self.df[self.df['Id'] == x]['Test Step Description'].values[0].split()))
-                optimized_cases.append(max_steps_case)
+    for key, similar in similar_cases.items():
+        if key not in processed:
+            group = [key] + similar
+            similar_groups.append(group)
+            processed.update(group)
+            max_steps_case = max(group, key=lambda x: len(
+                self.df[self.df['Id'] == x]['Test Step Description'].values[0].split()))
+            optimized_cases.append(max_steps_case)
 
-        unique_cases = set(self.df['Id']) - processed
-        optimized_cases.extend(unique_cases)
+    # Identify unique test cases not in similar groups
+    all_cases = set(self.df['Id'])
+    unique_cases_not_in_similar_groups = all_cases - processed
+    
+    # Store unique cases and extend optimized_cases with them
+    self.unique_cases_not_in_similar_groups = list(unique_cases_not_in_similar_groups)
+    optimized_cases.extend(unique_cases_not_in_similar_groups)
 
-        self.total_cases = len(self.df['Id'])
-        self.optimized_cases = optimized_cases
-        self.similar_groups = similar_groups
-
-    def find_unique_test_cases(self, threshold=0.1):
-        unique_cases = []
-        for i, test_case_id in enumerate(self.cosine_similarity_df.index):
-            similar = self.cosine_similarity_df[test_case_id][
-                self.cosine_similarity_df[test_case_id] >= threshold].index.tolist()
-            if len(similar) == 1:  # only the test case itself is similar
-                unique_cases.append(test_case_id)
-
-        self.unique_cases = unique_cases
-
-    def generate_report(self, output_file):
-        # Create DataFrame for similar groups
-        similar_groups_data = []
-        for group in self.similar_groups:
-            similar_groups_data.append({"Similar Test Cases": ", ".join(group)})
-
-        similar_groups_df = pd.DataFrame(similar_groups_data)
-
-        # Create DataFrame for optimized cases
-        optimized_cases_data = [{"Optimized Test Case ID": case} for case in self.optimized_cases]
-        optimized_cases_df = pd.DataFrame(optimized_cases_data)
-
-        # Create DataFrame for unique cases
-        unique_cases_data = [{"Unique Test Case ID": case} for case in self.unique_cases]
-        unique_cases_df = pd.DataFrame(unique_cases_data)
-
-        # Create summary data
-        summary_data = {
-            "Total Test Cases": [self.total_cases],
-            "Optimized Test Cases": [len(self.optimized_cases)],
-            "Bucket of Similar Test Cases": [len(self.similar_groups)],
-            "Unique Test Cases": [len(self.unique_cases)]
-        }
-        summary_df = pd.DataFrame(summary_data)
-
-        # Write to Excel
-        with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
-            summary_df.to_excel(writer, sheet_name='Summary', index=False)
-            similar_groups_df.to_excel(writer, sheet_name='Similar Test Cases', index=False)
-            optimized_cases_df.to_excel(writer, sheet_name='Optimized Test Cases', index=False)
-            unique_cases_df.to_excel(writer, sheet_name='Unique Test Cases', index=False)
-
-        print(f"Report generated: {output_file}")
-
-    # Save the final output to an Excel file
-def save_final_output_to_excel(results, unique_test_cases, final_output_file):
-        # Extract key differences, similarity scores, merged test cases, and unique test cases from results
-        combined_data = []
-
-        for result in results:
-            if result:
-                key_diff = "\n".join(result.get("Key differences present in the test steps:", ""))
-                sim_scores = "\n".join(result.get("Similarity score of the test cases:", ""))
-                merged_cases = "\n".join(result.get("Merged test cases:", ""))
-
-                combined_data.append({
-                    "Key Differences": key_diff,
-                    "Similarity Scores": sim_scores,
-                    "Merged Test Cases": merged_cases,
-                    "Unique Test Cases": ""  # Placeholder for unique test cases
-                })
-
-        # Add unique test cases to the combined data
-        for i, unique_case in enumerate(unique_test_cases):
-            if i < len(combined_data):
-                combined_data[i]["Unique Test Cases"] = unique_case
-            else:
-                combined_data.append({
-                    "Key Differences": "",
-                    "Similarity Scores": "",
-                    "Merged Test Cases": "",
-                    "Unique Test Cases": unique_case
-                })
-
-        # Create a DataFrame for the combined results
-        combined_df = pd.DataFrame(combined_data)
-
-        # Write to Excel
-        with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
-            combined_df.to_excel(writer, sheet_name='Test Case Results', index=False)
-
-        print(f"Final report generated: {final_output_file}")
+    self.total_cases = len(self.df['Id'])
+    self.optimized_cases = optimized_cases
+    self.similar_groups = similar_groups
